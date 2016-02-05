@@ -1,0 +1,68 @@
+clear all
+close all
+%% Morgan Yost, MATH 502 HW 1
+%% Problem 3
+x = 0:.1:1;
+figure(1)
+plot(x, abs(x.^2-x))
+title('Plot of x^2 - x')
+%% Problem 4
+x = [.2 .4 .6 .8 1];
+h = .2;
+U = x.^2-x;
+%Part a
+U_inf = max(abs(U));
+%Part b
+U_1 = h*sum(abs(U));
+%Part c
+U_2 = sqrt(h*sum(U.^2));
+%% Exercise 1.2
+%Part a
+u = [1 1 1 1 1;
+     -2 -1 0 1 2;
+     2 .5 0 .5 2;
+     -4/3 -1/6 0 1/6 4/3;
+     2/3 1/24 0 1/24 2/3];
+v = [0; 0; 1; 0; 0];
+C = inv(u)*v;
+fprintf('Using the method of undetermined coefficients, \n')
+fprintf('I found the coeffiecients to be:\n')
+fprintf('%f \n\n', C);
+%Part b
+fprintf('Using fdstencil:\n')
+[c, err0, err1] = fdstencil(2, -2:2);
+if(u*c' ~= v)
+    fprintf('Error: mismatched results \n')
+else
+    fprintf('Sucessful Match!\n\n')
+end
+%Part c
+x0 = ones(length(c),1);
+hCoeff = [-2 -1 0 1 2]';
+hvals = logspace(-1, -4, 13);
+count = 1;
+for h = hvals
+    result(count) = sum(c'.*sin(x0+h.*hCoeff));
+    err(count) = abs(4*sin(2)-result(count));
+    exptError(count) = abs(err0*h^3*cos(2) + err1*h^4*sin(2));
+    count = count+1;
+end
+
+%plots
+figure(2)
+loglog(hvals, err)
+title('Part A error versus hvals')
+xlabel('h')
+ylabel('error')
+figure(3)
+loglog(hvals, exptError)
+title('Part B error versus hvals')
+xlabel('h')
+ylabel('error')
+
+%make table for latex
+fprintf('Error table:')
+for i = 1:length(hvals)
+    fprintf('%.16f & %.16f & %.18f \\\\ \n', hvals(i), err(i), exptError(i));
+end
+

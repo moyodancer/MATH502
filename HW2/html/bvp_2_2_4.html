@@ -1,0 +1,272 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>bvp_2_2_4</title><meta name="generator" content="MATLAB 8.6"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2016-01-21"><meta name="DC.source" content="bvp_2_2_4.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput"><span class="comment">%</span>
+<span class="comment">% bvp_2.m</span>
+<span class="comment">% second order finite difference method for the bvp</span>
+<span class="comment">%   u''(x) = f(x),   u'(ax)=sigma,   u(bx)=beta</span>
+<span class="comment">% Using 3-pt differences on an arbitrary nonuniform grid.</span>
+<span class="comment">% Should be 2nd order accurate if grid points vary smoothly, but may</span>
+<span class="comment">% degenerate to "first order" on random or nonsmooth grids.</span>
+<span class="comment">%</span>
+<span class="comment">% Different BCs can be specified by changing the first and/or last rows of</span>
+<span class="comment">% A and F.</span>
+<span class="comment">%</span>
+<span class="comment">% From  http://www.amath.washington.edu/~rjl/fdmbook/  (2007)</span>
+
+<span class="comment">% ** modified</span>
+ax = 0;
+bx = 3;
+sigma = -5;   <span class="comment">% Dirichlet boundary condition at ax</span>
+alpha = 3;     <span class="comment">% Neumann boundary condtion at bx</span>
+
+f = @(x) exp(x);  <span class="comment">% right hand side function *modified</span>
+utrue = @(x) exp(x) + (sigma-exp(bx))*(x) + alpha - exp(ax);  <span class="comment">% true soln</span>
+
+<span class="comment">% true solution on fine grid for plotting:</span>
+xfine = linspace(ax,bx,101);
+ufine = utrue(xfine);
+
+<span class="comment">% Solve the problem for ntest different grid sizes to test convergence:</span>
+m1vals = [10 20 40 80];
+ntest = length(m1vals);
+hvals = zeros(ntest,1);  <span class="comment">% to hold h values</span>
+E = zeros(ntest,1);      <span class="comment">% to hold errors</span>
+
+<span class="keyword">for</span> jtest=1:ntest
+  m1 = m1vals(jtest);
+  m2 = m1 + 1;
+  m = m1 - 1;                 <span class="comment">% number of interior grid points</span>
+  hvals(jtest) = (bx-ax)/m1;  <span class="comment">% average grid spacing, for convergence tests</span>
+
+  <span class="comment">% set grid points:</span>
+  gridchoice = <span class="string">'uniform'</span>;          <span class="comment">% see xgrid.m for other choices</span>
+  x = xgrid(ax,bx,m,gridchoice);
+
+  <span class="comment">% set up matrix A (using sparse matrix storage):</span>
+  A = spalloc(m2,m2,3*m2);   <span class="comment">% initialize to zero matrix</span>
+
+  <span class="comment">% first row for Dirichlet BC at ax: *modified</span>
+  A(1,1:3) = fdcoeffF(0, x(1), x(1:3));
+
+  <span class="comment">% interior rows:</span>
+  <span class="keyword">for</span> i=2:m1
+     A(i,i-1:i+1) = fdcoeffF(2, x(i), x((i-1):(i+1)));
+     <span class="keyword">end</span>
+
+  <span class="comment">% last row for Nuemann BC at bx: *modified</span>
+  A(m2,m:m2) = fdcoeffF(1,x(m2),x(m:m2));
+
+  <span class="comment">% Right hand side:</span>
+  F = f(x);
+  F(1) = alpha; <span class="comment">% **modified</span>
+  F(m2) = sigma;
+
+  <span class="comment">% solve linear system:</span>
+  U = A\F;
+
+
+  <span class="comment">% compute error at grid points:</span>
+  uhat = utrue(x);
+  err = U - uhat;
+  E(jtest) = max(abs(err));
+  disp(<span class="string">' '</span>)
+  disp(sprintf(<span class="string">'Error with %i points is %9.5e'</span>,m2,E(jtest)))
+
+  clf
+  figure(i)
+  plot(x,U,<span class="string">'o'</span>)  <span class="comment">% plot computed solution</span>
+  title(sprintf(<span class="string">'Computed solution with %i grid points'</span>,m2));
+  hold <span class="string">on</span>
+
+  plot(xfine,ufine)  <span class="comment">% plot true solution</span>
+  hold <span class="string">off</span>
+
+  <span class="comment">% pause to see this plot:</span>
+  drawnow
+  <span class="comment">%input('Hit &lt;return&gt; to continue ');</span>
+
+  <span class="keyword">end</span>
+
+error_table(hvals, E);   <span class="comment">% print tables of errors and ratios</span>
+figure(2)
+error_loglog(hvals, E);  <span class="comment">% produce log-log plot of errors and least squares fit</span>
+</pre><pre class="codeoutput"> 
+Error with 11 points is 1.74886e+00
+ 
+Error with 21 points is 4.80811e-01
+ 
+Error with 41 points is 1.26086e-01
+ 
+Error with 81 points is 3.22858e-02
+ 
+      h        error       ratio       observed order
+   0.30000   1.74886e+00       NaN             NaN
+   0.15000   4.80811e-01   3.63732         1.86288
+   0.07500   1.26086e-01   3.81336         1.93106
+   0.03750   3.22858e-02   3.90531         1.96544
+ 
+ 
+Least squares fit gives E(h) = 18.0049 * h^1.92092
+ 
+</pre><img vspace="5" hspace="5" src="bvp_2_2_4_01.png" alt=""> <img vspace="5" hspace="5" src="bvp_2_2_4_02.png" alt=""> <img vspace="5" hspace="5" src="bvp_2_2_4_03.png" alt=""> <img vspace="5" hspace="5" src="bvp_2_2_4_04.png" alt=""> <img vspace="5" hspace="5" src="bvp_2_2_4_05.png" alt=""> <img vspace="5" hspace="5" src="bvp_2_2_4_06.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2015b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%
+% bvp_2.m 
+% second order finite difference method for the bvp
+%   u''(x) = f(x),   u'(ax)=sigma,   u(bx)=beta
+% Using 3-pt differences on an arbitrary nonuniform grid.
+% Should be 2nd order accurate if grid points vary smoothly, but may
+% degenerate to "first order" on random or nonsmooth grids. 
+%
+% Different BCs can be specified by changing the first and/or last rows of 
+% A and F.
+%
+% From  http://www.amath.washington.edu/~rjl/fdmbook/  (2007)
+
+% ** modified
+ax = 0;
+bx = 3;
+sigma = -5;   % Dirichlet boundary condition at ax
+alpha = 3;     % Neumann boundary condtion at bx
+
+f = @(x) exp(x);  % right hand side function *modified
+utrue = @(x) exp(x) + (sigma-exp(bx))*(x) + alpha - exp(ax);  % true soln
+
+% true solution on fine grid for plotting:
+xfine = linspace(ax,bx,101);
+ufine = utrue(xfine);
+
+% Solve the problem for ntest different grid sizes to test convergence:
+m1vals = [10 20 40 80];
+ntest = length(m1vals);
+hvals = zeros(ntest,1);  % to hold h values
+E = zeros(ntest,1);      % to hold errors
+
+for jtest=1:ntest
+  m1 = m1vals(jtest);
+  m2 = m1 + 1;
+  m = m1 - 1;                 % number of interior grid points
+  hvals(jtest) = (bx-ax)/m1;  % average grid spacing, for convergence tests
+
+  % set grid points:  
+  gridchoice = 'uniform';          % see xgrid.m for other choices
+  x = xgrid(ax,bx,m,gridchoice);   
+
+  % set up matrix A (using sparse matrix storage):
+  A = spalloc(m2,m2,3*m2);   % initialize to zero matrix
+
+  % first row for Dirichlet BC at ax: *modified
+  A(1,1:3) = fdcoeffF(0, x(1), x(1:3)); 
+
+  % interior rows:
+  for i=2:m1
+     A(i,i-1:i+1) = fdcoeffF(2, x(i), x((i-1):(i+1)));
+     end
+
+  % last row for Nuemann BC at bx: *modified
+  A(m2,m:m2) = fdcoeffF(1,x(m2),x(m:m2)); 
+  
+  % Right hand side:
+  F = f(x); 
+  F(1) = alpha; % **modified  
+  F(m2) = sigma;
+  
+  % solve linear system:
+  U = A\F;
+
+
+  % compute error at grid points:
+  uhat = utrue(x);
+  err = U - uhat;
+  E(jtest) = max(abs(err));  
+  disp(' ')
+  disp(sprintf('Error with %i points is %9.5e',m2,E(jtest)))
+
+  clf
+  figure(i)
+  plot(x,U,'o')  % plot computed solution
+  title(sprintf('Computed solution with %i grid points',m2));
+  hold on
+  
+  plot(xfine,ufine)  % plot true solution
+  hold off
+  
+  % pause to see this plot:  
+  drawnow
+  %input('Hit <return> to continue ');
+  
+  end
+
+error_table(hvals, E);   % print tables of errors and ratios
+figure(2)
+error_loglog(hvals, E);  % produce log-log plot of errors and least squares fit
+
+
+##### SOURCE END #####
+--></body></html>
